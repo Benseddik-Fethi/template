@@ -5,7 +5,7 @@ Template Spring Boot générique avec OAuth2, RustFS, et architecture clean.
 ## 📦 Stack Technique
 
 - **Java 21**
-- **Spring Boot 3.2+**
+- **Spring Boot 3.5.6**
 - **PostgreSQL 16**
 - **Keycloak** (OAuth2 / JWT)
 - **RustFS** (S3-compatible)
@@ -32,7 +32,11 @@ nano .env
 
 ### 3. Démarrer l'application
 ```bash
-./start.sh
+# Avec Maven wrapper
+./mvnw spring-boot:run
+
+# Ou avec Maven installé
+mvn spring-boot:run
 ```
 
 ### 4. Accéder à l'application
@@ -48,7 +52,7 @@ Controller → Service → Repository
 
 ### Structure du Projet
 ```
-backend/src/main/java/com/benseddik/template/
+src/main/java/com/benseddik/template/
 ├── web/                    # Controllers (HTTP)
 │   ├── AuthController.java
 │   ├── UserController.java
@@ -122,19 +126,15 @@ mvn test
 # Tests d'intégration
 mvn verify
 
-# Couverture
-mvn clean test jacoco:report
+# Note: JaCoCo pour la couverture de code sera ajouté dans une future version
 ```
 
 ## 🚀 Déploiement
 
 ### Docker
 ```bash
-# Build
-docker build -t myapp:latest .
-
-# Run
-docker run -p 8080:8080 --env-file .env myapp:latest
+# TODO: Dockerfile à créer
+# Le template inclura un Dockerfile optimisé multi-stage dans une future version
 ```
 
 ### Production

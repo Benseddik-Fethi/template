@@ -27,7 +27,7 @@ public class ImageController {
             @RequestParam("file") MultipartFile file,
             Authentication auth) {
 
-        log.info("📸 Upload photo de profil - User: {}, Taille: {} bytes",
+        log.info("Upload photo de profil - User: {}, Taille: {} bytes",
                 auth.getName(), file.getSize());
         return ResponseEntity.ok(rustFsService.uploadFile(file, "users", auth));
     }
@@ -39,7 +39,7 @@ public class ImageController {
             @PathVariable String folder,
             @PathVariable String filename) {
         rustFsService.deleteFile(folder, filename);
-        log.info("🗑️ Image supprimée : {}/{}", folder, filename);
+        log.info("Image supprimée: {}/{}", folder, filename);
         return ResponseEntity.noContent().build();
     }
 }
