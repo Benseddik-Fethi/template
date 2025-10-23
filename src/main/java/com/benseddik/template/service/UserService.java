@@ -23,6 +23,7 @@ public class UserService {
 
     private final AppUserRepository userRepository;
     private final CurrentUserService currentUserService;
+    private final KeycloakService keycloakService;
 
     @Transactional(readOnly = true)
     public MeResponse getCurrentUserProfile(Authentication auth) {
@@ -75,7 +76,7 @@ public class UserService {
 
         if (updated) {
             userRepository.save(user);
-            log.info("✅ Profile updated for user: {}", user.getEmail());
+            log.info("Profile updated for user: {}", user.getEmail());
         } else {
             log.debug("No changes detected for user profile: {}", user.getEmail());
         }
@@ -84,11 +85,38 @@ public class UserService {
     public void deleteAccount(Authentication auth) {
         AppUser user = currentUserService.ensureCurrentUser(auth);
 
-        log.warn("⚠️ Account deletion requested by user: {}", user.getEmail());
+        log.warn("Account deletion requested by user: {} (ID: {})", user.getEmail(), user.getId());
 
-        throw new ResponseStatusException(
-                HttpStatus.NOT_IMPLEMENTED,
-                "Account deletion not yet implemented. Please contact support."
-        );
+        try {
+            // Supprimer l'utilisateur de Keycloak en premier
+            if (user.getExternalId() != null && !user.getExternalId().isBlank()) {
+                try {
+                    keycloakService.deleteUser(user.getExternalId());
+                    log.info("User deleted from Keycloak: {}", user.getExternalId());
+                } catch (ResponseStatusException e) {
+                    // Si l'utilisateur n'existe pas dans Keycloak (404), continuer la suppression locale
+                    if (e.getStatusCode() != HttpStatus.NOT_FOUND) {
+                        throw e;
+                    }
+                    log.warn("User not found in Keycloak, proceeding with local deletion: {}", user.getExternalId());
+                }
+            } else {
+                log.warn("No external ID for user, skipping Keycloak deletion: {}", user.getEmail());
+            }
+
+            // Supprimer l'utilisateur de la base de données locale
+            userRepository.delete(user);
+            log.info("User account deleted successfully: {} (ID: {})", user.getEmail(), user.getId());
+
+        } catch (ResponseStatusException e) {
+            log.error("Failed to delete user account: {}", user.getEmail(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during account deletion: {}", user.getEmail(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Une erreur inattendue s'est produite lors de la suppression du compte"
+            );
+        }
     }
 }

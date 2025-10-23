@@ -50,16 +50,16 @@ public class RustFsService {
                     .build();
 
             s3Client.headBucket(headBucketRequest);
-            log.info("✅ RustFS connecté - Bucket '{}' disponible sur {}",
+            log.info("RustFS connecté - Bucket '{}' disponible sur {}",
                     rustFsProperties.getBucketName(),
                     rustFsProperties.getEndpoint());
 
         } catch (NoSuchBucketException e) {
-            log.error("❌ Bucket '{}' introuvable. Créez-le dans l'interface RustFS.",
+            log.error("Bucket '{}' introuvable. Créez-le dans l'interface RustFS.",
                     rustFsProperties.getBucketName());
             throw new IllegalStateException("Bucket RustFS non disponible: " + rustFsProperties.getBucketName(), e);
         } catch (Exception e) {
-            log.warn("⚠️ Impossible de vérifier le bucket RustFS: {}", e.getMessage());
+            log.warn("Impossible de vérifier le bucket RustFS: {}", e.getMessage());
         }
     }
 
@@ -95,7 +95,7 @@ public class RustFsService {
             // Construire l'URL publique
             String fileUrl = buildPublicUrl(key);
 
-            log.info("✅ Fichier uploadé sur RustFS - User: {}, Key: {}, Size: {} bytes",
+            log.info("Fichier uploadé sur RustFS - User: {}, Key: {}, Size: {} bytes",
                     auth != null ? auth.getName() : "system",
                     key,
                     file.getSize());
@@ -112,13 +112,13 @@ public class RustFsService {
                     .build();
 
         } catch (IOException e) {
-            log.error("❌ Erreur lors de l'upload du fichier vers RustFS", e);
+            log.error("Erreur lors de l'upload du fichier vers RustFS", e);
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Erreur lors de l'upload du fichier: " + e.getMessage()
             );
         } catch (S3Exception e) {
-            log.error("❌ Erreur S3 lors de l'upload: {}", e.awsErrorDetails().errorMessage());
+            log.error("Erreur S3 lors de l'upload: {}", e.awsErrorDetails().errorMessage());
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Erreur RustFS: " + e.awsErrorDetails().errorMessage()
@@ -145,7 +145,7 @@ public class RustFsService {
         try {
             // Vérifier que le fichier existe avant de supprimer
             if (!fileExists(key)) {
-                log.warn("⚠️ Tentative de suppression d'un fichier inexistant: {}", key);
+                log.warn("Tentative de suppression d'un fichier inexistant: {}", key);
                 throw new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Fichier non trouvé: " + key
@@ -158,19 +158,19 @@ public class RustFsService {
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
-            log.info("✅ Fichier supprimé de RustFS: {}", key);
+            log.info("Fichier supprimé de RustFS: {}", key);
 
         } catch (ResponseStatusException e) {
             throw e; // Repropager les erreurs 404/400
         } catch (S3Exception e) {
-            log.error("❌ Erreur S3 lors de la suppression de {}: {}",
+            log.error("Erreur S3 lors de la suppression de {}: {}",
                     key, e.awsErrorDetails().errorMessage());
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Erreur lors de la suppression du fichier: " + e.awsErrorDetails().errorMessage()
             );
         } catch (Exception e) {
-            log.error("❌ Erreur inattendue lors de la suppression de {}", key, e);
+            log.error("Erreur inattendue lors de la suppression de {}", key, e);
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Erreur inattendue lors de la suppression du fichier"
@@ -196,7 +196,7 @@ public class RustFsService {
         } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
-            log.error("❌ Erreur lors de la vérification d'existence de {}: {}", key, e.getMessage());
+            log.error("Erreur lors de la vérification d'existence de {}: {}", key, e.getMessage());
             return false;
         }
     }

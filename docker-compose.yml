@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # =============================================================================
+  # PostgreSQL Database
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: template-postgres
+    environment:
+      POSTGRES_DB: template
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - template-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # Keycloak OAuth2 Server
+  # =============================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: template-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - template-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # =============================================================================
+  # MinIO (S3-compatible storage - alternative à RustFS)
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: template-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"     # API
+      - "9001:9001"     # Console
+    volumes:
+      - minio_data:/data
+    networks:
+      - template-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # MinIO Client - Créer le bucket au démarrage
+  # =============================================================================
+  minio-setup:
+    image: minio/mc:latest
+    container_name: template-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/template-bucket --ignore-existing;
+      mc anonymous set public myminio/template-bucket;
+      exit 0;
+      "
+    networks:
+      - template-network
+
+  # =============================================================================
+  # Spring Boot Application
+  # =============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: template-app
+    environment:
+      # Database
+      DATABASE_URL: jdbc:postgresql://postgres:5432/template
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+
+      # Keycloak
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: my-realm
+      KEYCLOAK_CLIENT_ID: my-client
+      KEYCLOAK_CLIENT_SECRET: your-client-secret
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+
+      # Storage (MinIO)
+      RUSTFS_ENDPOINT: http://minio:9000
+      RUSTFS_ACCESS_KEY: minioadmin
+      RUSTFS_SECRET_KEY: minioadmin
+      RUSTFS_BUCKET_NAME: template-bucket
+      RUSTFS_REGION: us-east-1
+
+      # CORS
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
+
+      # Spring
+      SPRING_PROFILES_ACTIVE: dev
+
+      # Java Options
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - template-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  template-network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local

@@ -50,7 +50,7 @@ public class KeycloakService {
 
             if (response.getStatus() == 201) {
                 String userId = response.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
-                log.info("✅ Utilisateur créé avec succès dans Keycloak: {} (ID: {})", request.getEmail(), userId);
+                log.info("Utilisateur créé avec succès dans Keycloak: {} (ID: {})", request.getEmail(), userId);
                 assignUserRole(realmResource, userId);
                 AppUser appUser = new AppUser();
                 appUser.setEmail(request.getEmail());
@@ -58,7 +58,7 @@ public class KeycloakService {
                 appUser.setExternalId(userId);
                 userRepository.save(appUser);
             } else {
-                log.error("❌ Erreur lors de la création de l'utilisateur. Status: {}", response.getStatus());
+                log.error("Erreur lors de la création de l'utilisateur. Status: {}", response.getStatus());
                 throw new ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "Erreur lors de la création de l'utilisateur: " + response.getStatusInfo()
@@ -68,7 +68,7 @@ public class KeycloakService {
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
-            log.error("❌ Erreur lors de la création de l'utilisateur dans Keycloak", e);
+            log.error("Erreur lors de la création de l'utilisateur dans Keycloak", e);
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Erreur lors de la création de l'utilisateur: " + e.getMessage()
@@ -98,9 +98,59 @@ public class KeycloakService {
             RoleRepresentation userRole = realmResource.roles().get("USER").toRepresentation();
             UserResource userResource = realmResource.users().get(userId);
             userResource.roles().realmLevel().add(Collections.singletonList(userRole));
-            log.info("✅ Rôle 'user' assigné à l'utilisateur {}", userId);
+            log.info("Rôle 'user' assigné à l'utilisateur {}", userId);
         } catch (Exception e) {
-            log.error("⚠️ Impossible d'assigner le rôle 'USER' à l'utilisateur {}: {}", userId, e.getMessage());
+            log.error("Impossible d'assigner le rôle 'USER' à l'utilisateur {}: {}", userId, e.getMessage());
+        }
+    }
+
+    public void deleteUser(String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            log.warn("Tentative de suppression avec externalId null ou vide");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "L'identifiant externe de l'utilisateur est requis"
+            );
+        }
+
+        try {
+            RealmResource realmResource = keycloak.realm(realm);
+            UsersResource usersResource = realmResource.users();
+            UserResource userResource = usersResource.get(externalId);
+
+            // Vérifier que l'utilisateur existe
+            UserRepresentation userRep = userResource.toRepresentation();
+            if (userRep == null) {
+                log.warn("Utilisateur non trouvé dans Keycloak: {}", externalId);
+                throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Utilisateur non trouvé dans Keycloak"
+                );
+            }
+
+            // Supprimer l'utilisateur
+            Response response = usersResource.delete(externalId);
+
+            if (response.getStatus() == 204) {
+                log.info("Utilisateur supprimé avec succès de Keycloak: {} ({})",
+                        userRep.getEmail(), externalId);
+            } else {
+                log.error("Erreur lors de la suppression de l'utilisateur. Status: {}", response.getStatus());
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Erreur lors de la suppression de l'utilisateur de Keycloak"
+                );
+            }
+            response.close();
+
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Erreur lors de la suppression de l'utilisateur dans Keycloak: {}", externalId, e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur lors de la suppression de l'utilisateur: " + e.getMessage()
+            );
         }
     }
 }

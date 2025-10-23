@@ -5,7 +5,7 @@ Template Spring Boot générique avec OAuth2, RustFS, et architecture clean.
 ## 📦 Stack Technique
 
 - **Java 21**
-- **Spring Boot 3.2+**
+- **Spring Boot 3.5.6**
 - **PostgreSQL 16**
 - **Keycloak** (OAuth2 / JWT)
 - **RustFS** (S3-compatible)
@@ -32,7 +32,11 @@ nano .env
 
 ### 3. Démarrer l'application
 ```bash
-./start.sh
+# Avec Maven wrapper
+./mvnw spring-boot:run
+
+# Ou avec Maven installé
+mvn spring-boot:run
 ```
 
 ### 4. Accéder à l'application
@@ -48,7 +52,7 @@ Controller → Service → Repository
 
 ### Structure du Projet
 ```
-backend/src/main/java/com/benseddik/template/
+src/main/java/com/benseddik/template/
 ├── web/                    # Controllers (HTTP)
 │   ├── AuthController.java
 │   ├── UserController.java
@@ -114,7 +118,42 @@ backend/src/main/java/com/benseddik/template/
 
 Voir `.env.example` pour toutes les variables.
 
+### Profils Spring Boot
+
+Le projet inclut 3 profils de configuration :
+
+| Profil | Fichier | Usage | Caractéristiques |
+|--------|---------|-------|------------------|
+| **dev** | `application.yml` | Développement (défaut) | Logs DEBUG, Swagger activé, valeurs par défaut |
+| **test** | `application-test.yml` | Tests automatisés | H2 en mémoire, DDL auto, logs verbeux |
+| **prod** | `application-prod.yml` | Production | Logs INFO, Swagger désactivé, aucune valeur par défaut |
+
+```bash
+# Activer un profil
+export SPRING_PROFILES_ACTIVE=prod
+./mvnw spring-boot:run
+
+# Ou avec la commande java
+java -jar target/*.jar --spring.profiles.active=prod
+```
+
+### Configuration Email (optionnelle)
+
+Le starter Mail est inclus mais désactivé par défaut. Pour l'activer :
+
+1. Copier `src/main/resources/application-mail.yml.example`
+2. Renommer en `application-mail.yml`
+3. Configurer avec vos credentials SMTP
+4. Activer le profil : `SPRING_PROFILES_ACTIVE=dev,mail`
+
+Voir le fichier exemple pour les configurations Gmail, SendGrid, AWS SES, etc.
+
 ## 🧪 Tests
+
+Le projet inclut une suite complète de tests avec couverture de code JaCoCo.
+
+### Exécuter les tests
+
 ```bash
 # Tests unitaires
 mvn test
@@ -122,26 +161,102 @@ mvn test
 # Tests d'intégration
 mvn verify
 
-# Couverture
+# Rapport de couverture JaCoCo
 mvn clean test jacoco:report
+# Le rapport HTML est généré dans: target/site/jacoco/index.html
+
+# Vérifier le seuil de couverture (70%)
+mvn verify
 ```
 
-## 🚀 Déploiement
+### Structure des tests
 
-### Docker
+```
+src/test/java/com/benseddik/template/
+├── service/                    # Tests unitaires des services
+│   ├── UserServiceTest.java
+│   ├── KeycloakServiceTest.java
+│   └── RustFsServiceTest.java
+├── web/                        # Tests d'intégration des controllers
+│   ├── UserControllerTest.java
+│   ├── AuthControllerTest.java
+│   └── ImageControllerTest.java
+└── config/                     # Configuration de test
+    └── TestSecurityConfig.java
+```
+
+### Couverture de code
+
+- **Objectif minimal**: 70% de couverture par package
+- **JaCoCo**: Configuré pour générer des rapports HTML, XML et CSV
+- **Exclusions**: Configuration, DTOs, entités (domain), classes d'erreur
+
+### Technologies de test
+
+- **JUnit 5**: Framework de test principal
+- **Mockito**: Mock des dépendances
+- **MockMvc**: Tests des controllers REST
+- **AssertJ**: Assertions fluides
+- **H2**: Base de données en mémoire pour les tests (voir application-test.yml)
+
+## 🐳 Docker
+
+### Démarrage rapide avec Docker Compose
 ```bash
-# Build
-docker build -t myapp:latest .
+# Démarrer tous les services (PostgreSQL + Keycloak + MinIO + App)
+docker-compose up -d
 
-# Run
-docker run -p 8080:8080 --env-file .env myapp:latest
+# Voir les logs
+docker-compose logs -f app
+
+# Arrêter tous les services
+docker-compose down
+
+# Arrêter et supprimer les volumes
+docker-compose down -v
 ```
 
-### Production
+Services disponibles:
+- **API**: http://localhost:8080/api/v1
+- **Swagger**: http://localhost:8080/api/v1/swagger-ui.html
+- **Keycloak**: http://localhost:8081 (admin/admin)
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+- **PostgreSQL**: localhost:5432 (postgres/postgres)
 
+### Build Docker manuel
+```bash
+# Builder l'image
+docker build -t template-api:latest .
+
+# Exécuter le container
+docker run -p 8080:8080 \
+  -e DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/template \
+  -e DATABASE_USERNAME=postgres \
+  -e DATABASE_PASSWORD=postgres \
+  template-api:latest
+```
+
+## 🚀 Déploiement Production
+
+### Avec Docker
+```bash
+# 1. Builder l'image
+docker build -t myapp:1.0.0 .
+
+# 2. Tag pour votre registry
+docker tag myapp:1.0.0 registry.example.com/myapp:1.0.0
+
+# 3. Push vers le registry
+docker push registry.example.com/myapp:1.0.0
+
+# 4. Déployer (Kubernetes, Docker Swarm, etc.)
+```
+
+### Sans Docker
 1. Configurer les variables d'environnement production
-2. Builder : `mvn clean package -DskipTests`
+2. Builder : `mvn clean package -Pprod`
 3. Déployer le JAR : `target/*.jar`
+4. Exécuter : `java -jar target/template-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod`
 
 ## 🛠️ Développement
 
