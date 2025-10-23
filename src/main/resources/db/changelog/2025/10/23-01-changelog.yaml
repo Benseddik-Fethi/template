@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1761229945327-1
+      author: feben
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_app_user
+                  name: id
+                  type: UUID
+              - column:
+                  constraints:
+                    nullable: false
+                  name: created_by
+                  type: VARCHAR(50)
+              - column:
+                  constraints:
+                    nullable: false
+                  name: created_date
+                  type: DATETIME
+              - column:
+                  name: last_modified_by
+                  type: VARCHAR(50)
+              - column:
+                  name: last_modified_date
+                  type: DATETIME
+              - column:
+                  constraints:
+                    nullable: false
+                  name: email
+                  type: VARCHAR(190)
+              - column:
+                  constraints:
+                    nullable: false
+                  name: display_name
+                  type: VARCHAR(120)
+              - column:
+                  name: phone
+                  type: VARCHAR(32)
+              - column:
+                  name: external_id
+                  type: VARCHAR(64)
+              - column:
+                  name: photo_url
+                  type: VARCHAR(500)
+            tableName: app_user
+  - changeSet:
+      id: 1761229945327-2
+      author: feben
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addUniqueConstraint:
+            columnNames: email
+            constraintName: uk_app_user_email
+            tableName: app_user
+  - changeSet:
+      id: 1761229945327-3
+      author: feben
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addUniqueConstraint:
+            columnNames: external_id
+            constraintName: uk_app_user_external_id
+            tableName: app_user
+

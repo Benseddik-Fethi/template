@@ -1,0 +1,135 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-stacktrace: never
+  max-http-request-header-size: 16KB
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+  servlet:
+    context-path: /api/v1
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  application:
+    name: template-api
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+  mvc:
+    problemdetails:
+      enabled: false
+
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+    default-property-inclusion: non_null
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/template}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:password}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc.lob.non_contextual_creation: true
+        format_sql: true
+        jdbc.batch_size: 20
+        order_inserts: true
+        order_updates: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    change-log: classpath:db/changelog/db-changelog-master.yaml
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL:http://localhost:8081}/realms/${KEYCLOAK_REALM:my-realm}
+          jwk-set-uri: ${KEYCLOAK_URL:http://localhost:8081}/realms/${KEYCLOAK_REALM:my-realm}/protocol/openid-connect/certs
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+logging:
+  level:
+    root: INFO
+    com.benseddik.template.security: DEBUG
+    com.benseddik.template.error: DEBUG
+    org.springframework.security: INFO
+    org.springframework.security.oauth2: DEBUG
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/template.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    try-it-out-enabled: true
+
+keycloak:
+  auth-server-url: ${KEYCLOAK_URL:http://localhost:8081}
+  realm: ${KEYCLOAK_REALM:my-realm}
+  resource: ${KEYCLOAK_CLIENT_ID:my-client}
+  credentials:
+    secret: ${KEYCLOAK_CLIENT_SECRET:your-client-secret}
+  admin:
+    username: ${KEYCLOAK_ADMIN_USER:admin}
+    password: ${KEYCLOAK_ADMIN_PASSWORD:admin}
+
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+  security:
+    jwt:
+      clock-skew-seconds: 60
+
+rustfs:
+  endpoint: ${RUSTFS_ENDPOINT:https://rustfs.example.com}
+  access-key: ${RUSTFS_ACCESS_KEY}
+  secret-key: ${RUSTFS_SECRET_KEY}
+  bucket-name: ${RUSTFS_BUCKET_NAME:my-bucket}
+  region: ${RUSTFS_REGION:us-east-1}
