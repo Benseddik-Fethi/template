@@ -149,6 +149,11 @@ Le starter Mail est inclus mais désactivé par défaut. Pour l'activer :
 Voir le fichier exemple pour les configurations Gmail, SendGrid, AWS SES, etc.
 
 ## 🧪 Tests
+
+Le projet inclut une suite complète de tests avec couverture de code JaCoCo.
+
+### Exécuter les tests
+
 ```bash
 # Tests unitaires
 mvn test
@@ -156,8 +161,43 @@ mvn test
 # Tests d'intégration
 mvn verify
 
-# Note: JaCoCo pour la couverture de code sera ajouté dans une future version
+# Rapport de couverture JaCoCo
+mvn clean test jacoco:report
+# Le rapport HTML est généré dans: target/site/jacoco/index.html
+
+# Vérifier le seuil de couverture (70%)
+mvn verify
 ```
+
+### Structure des tests
+
+```
+src/test/java/com/benseddik/template/
+├── service/                    # Tests unitaires des services
+│   ├── UserServiceTest.java
+│   ├── KeycloakServiceTest.java
+│   └── RustFsServiceTest.java
+├── web/                        # Tests d'intégration des controllers
+│   ├── UserControllerTest.java
+│   ├── AuthControllerTest.java
+│   └── ImageControllerTest.java
+└── config/                     # Configuration de test
+    └── TestSecurityConfig.java
+```
+
+### Couverture de code
+
+- **Objectif minimal**: 70% de couverture par package
+- **JaCoCo**: Configuré pour générer des rapports HTML, XML et CSV
+- **Exclusions**: Configuration, DTOs, entités (domain), classes d'erreur
+
+### Technologies de test
+
+- **JUnit 5**: Framework de test principal
+- **Mockito**: Mock des dépendances
+- **MockMvc**: Tests des controllers REST
+- **AssertJ**: Assertions fluides
+- **H2**: Base de données en mémoire pour les tests (voir application-test.yml)
 
 ## 🐳 Docker
 
