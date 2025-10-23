@@ -1,0 +1,88 @@
+# =============================================================================
+# Configuration Email - EXEMPLE
+# =============================================================================
+# Ce fichier est un exemple de configuration pour le spring-boot-starter-mail
+# Pour l'utiliser:
+# 1. Renommer ce fichier en application-mail.yml
+# 2. Décommenter et configurer les propriétés ci-dessous
+# 3. Ajouter 'mail' au profil actif: SPRING_PROFILES_ACTIVE=dev,mail
+# =============================================================================
+
+#spring:
+#  mail:
+#    host: smtp.gmail.com
+#    port: 587
+#    username: ${MAIL_USERNAME:your-email@gmail.com}
+#    password: ${MAIL_PASSWORD:your-app-password}
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+#            required: true
+#          connectiontimeout: 5000
+#          timeout: 3000
+#          writetimeout: 5000
+#
+#app:
+#  mail:
+#    from: ${MAIL_FROM:noreply@example.com}
+#    from-name: ${MAIL_FROM_NAME:Template App}
+
+# =============================================================================
+# Exemples de configuration pour différents fournisseurs
+# =============================================================================
+
+# --- Gmail ---
+# spring.mail.host=smtp.gmail.com
+# spring.mail.port=587
+# Note: Utiliser un "App Password" et non votre mot de passe principal
+# https://support.google.com/accounts/answer/185833
+
+# --- SendGrid ---
+# spring.mail.host=smtp.sendgrid.net
+# spring.mail.port=587
+# spring.mail.username=apikey
+# spring.mail.password=YOUR_SENDGRID_API_KEY
+
+# --- Mailgun ---
+# spring.mail.host=smtp.mailgun.org
+# spring.mail.port=587
+# spring.mail.username=postmaster@your-domain.mailgun.org
+# spring.mail.password=YOUR_MAILGUN_PASSWORD
+
+# --- AWS SES ---
+# spring.mail.host=email-smtp.us-east-1.amazonaws.com
+# spring.mail.port=587
+# spring.mail.username=YOUR_AWS_SES_SMTP_USERNAME
+# spring.mail.password=YOUR_AWS_SES_SMTP_PASSWORD
+
+# --- Microsoft 365 ---
+# spring.mail.host=smtp.office365.com
+# spring.mail.port=587
+# spring.mail.username=your-email@outlook.com
+# spring.mail.password=YOUR_PASSWORD
+
+# =============================================================================
+# Service Email exemple
+# =============================================================================
+# Créer un service similaire à celui-ci pour envoyer des emails:
+#
+# @Service
+# @RequiredArgsConstructor
+# public class EmailService {
+#     private final JavaMailSender mailSender;
+#
+#     @Value("${app.mail.from}")
+#     private String from;
+#
+#     public void sendWelcomeEmail(String to, String username) {
+#         SimpleMailMessage message = new SimpleMailMessage();
+#         message.setFrom(from);
+#         message.setTo(to);
+#         message.setSubject("Bienvenue !");
+#         message.setText("Bonjour " + username + ", bienvenue sur notre application !");
+#         mailSender.send(message);
+#     }
+# }
